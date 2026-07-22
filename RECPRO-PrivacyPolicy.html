@@ -206,11 +206,16 @@
 					var ratio = remaining / totalMs;
 					countdownText.textContent = left;
 					countdownProgress.style.strokeDashoffset = CIRCUMFERENCE * (1 - ratio);
+					if (left > 0) {
+						agreeBtn.textContent = 'Please read (' + left + 's)';
+					}
 				}
 
 				function enableAgree() {
+					updateProgress();
 					countdownEl.style.display = 'none';
 					agreeBtn.disabled = false;
+					agreeBtn.textContent = 'I Agree';
 				}
 
 				function tick() {
@@ -320,7 +325,7 @@
 			</main>
 
 			<footer class="footer">
-				<button id="agree-btn" class="agree-btn" type="button" disabled>I Agree</button>
+				<button id="agree-btn" class="agree-btn" type="button" disabled>Please read (5s)</button>
 			</footer>
 		</div>
 	</body>
