@@ -100,6 +100,52 @@
 				margin-bottom: 16px;
 			}
 
+			.countdown {
+				position: fixed;
+				top: calc(12px + env(safe-area-inset-top));
+				right: calc(16px + env(safe-area-inset-right));
+				z-index: 100;
+				width: 44px;
+				height: 44px;
+				background-color: transparent;
+			}
+
+			.countdown-ring {
+				width: 100%;
+				height: 100%;
+				transform: rotate(-90deg);
+				background-color: transparent;
+			}
+
+			.countdown-ring-bg,
+			.countdown-ring-progress {
+				fill: none;
+				stroke-width: 3;
+				background-color: transparent;
+			}
+
+			.countdown-ring-bg {
+				stroke: rgba(74, 144, 226, 0.18);
+			}
+
+			.countdown-ring-progress {
+				stroke: #4a90e2;
+				stroke-linecap: round;
+				transition: stroke-dashoffset 0.15s linear;
+			}
+
+			.countdown-text {
+				position: absolute;
+				inset: 0;
+				display: flex;
+				align-items: center;
+				justify-content: center;
+				font-size: 15px;
+				font-weight: 600;
+				color: #4a90e2;
+				background-color: transparent;
+			}
+
 			.footer {
 				flex-shrink: 0;
 				padding: 16px 24px;
@@ -129,20 +175,75 @@
 			.agree-btn:disabled {
 				background: #ccc;
 				cursor: not-allowed;
+				opacity: 1;
 			}
 		</style>
 		<script type="text/javascript">
 			document.addEventListener('DOMContentLoaded', function() {
-				document.getElementById('agree-btn').addEventListener('click', function() {
-					window.webkit.messageHandlers.Agree.postMessage("");
+				var COUNTDOWN_SECONDS = 5;
+				var RING_RADIUS = 18;
+				var CIRCUMFERENCE = 2 * Math.PI * RING_RADIUS;
+				var countdownEl = document.getElementById('countdown');
+				var countdownText = document.getElementById('countdown-text');
+				var countdownProgress = document.getElementById('countdown-progress');
+				var agreeBtn = document.getElementById('agree-btn');
+				var agreed = false;
+				var totalMs = COUNTDOWN_SECONDS * 1000;
+				var deadline = Date.now() + totalMs;
+
+				countdownProgress.style.strokeDasharray = CIRCUMFERENCE;
+				countdownProgress.style.strokeDashoffset = '0';
+
+				function post(handler) {
+					try {
+						window.webkit.messageHandlers[handler].postMessage("");
+					} catch (e) {}
+				}
+
+				function updateProgress() {
+					var remaining = Math.max(0, deadline - Date.now());
+					var left = Math.ceil(remaining / 1000);
+					var ratio = remaining / totalMs;
+					countdownText.textContent = left;
+					countdownProgress.style.strokeDashoffset = CIRCUMFERENCE * (1 - ratio);
+				}
+
+				function enableAgree() {
+					countdownEl.style.display = 'none';
+					agreeBtn.disabled = false;
+				}
+
+				function tick() {
+					updateProgress();
+					if (Date.now() < deadline) {
+						setTimeout(tick, 100);
+						return;
+					}
+					enableAgree();
+				}
+
+				agreeBtn.addEventListener('click', function() {
+					if (agreed || agreeBtn.disabled) {
+						return;
+					}
+					agreed = true;
+					agreeBtn.disabled = true;
+					post('Agree');
 				});
-				try {
-					window.webkit.messageHandlers.Complete.postMessage("");
-				} catch (e) {}
+
+				post('Complete');
+				tick();
 			});
 		</script>
 	</head>
 	<body>
+		<div id="countdown" class="countdown">
+			<svg class="countdown-ring" viewBox="0 0 44 44" aria-hidden="true">
+				<circle class="countdown-ring-bg" cx="22" cy="22" r="18"></circle>
+				<circle id="countdown-progress" class="countdown-ring-progress" cx="22" cy="22" r="18"></circle>
+			</svg>
+			<span id="countdown-text" class="countdown-text">5</span>
+		</div>
 		<div class="page">
 			<header class="header">
 				<img id="logo" class="logo" src="logo.png" />
@@ -219,7 +320,7 @@
 			</main>
 
 			<footer class="footer">
-				<button id="agree-btn" class="agree-btn" type="button">I Agree</button>
+				<button id="agree-btn" class="agree-btn" type="button" disabled>I Agree</button>
 			</footer>
 		</div>
 	</body>
